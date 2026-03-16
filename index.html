@@ -1,17 +1,20 @@
+
 <html>
-<head>
-    <meta charset="UTF-8">
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
      <title>Convert Zero Gen3 logfile</title>
     <style>
         body {
             display: flex;
-            justify-content: center;
+            justify-content: left;
             align-items: flex-start;
             height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
-            text-align: center;
+            text-align: left;
             padding-top: 50px;
+            padding-left: 10px;
+            width: 100%;
         }
 
         textarea {
@@ -22,25 +25,47 @@
         }
 
         input {
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 1px 2px;
+            font-size: 12px;
             cursor: pointer;
         }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
+            font-size: 12px;
             cursor: pointer;
+            border: solid;
+            border-width: 1px; 
         }
         div {
             padding: 10px 20px;
             font-size: 14px;
             cursor: pointer;
+            width: 100%;
         }
         p,table {
             padding: 10px 20px;
             font-size: 12px;
             cursor: pointer;
             text-align: left;
+        }
+        .collapsible {
+            background-color: #eee;
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: center;
+            outline: none;
+            font-size: 12px;
+        }
+        .active, .collapsible:hover {
+            background-color: #ccc;
+        }
+        .content {
+            padding: 0 18px;
+            display: none;
+            overflow: hidden;
+            background-color: #f1f1f1;
         }
     </style>
 </head>
@@ -50,201 +75,241 @@
     <br>
     <input type="file" id="fileInput">
     <br>
-    <div id="fileContents" style="text-align: left;"></div>
+    <div id="fileContents" style="text-align: left; "></div>
     <br>
-    <button id="dwnld" onclick="downloadTextFile()" disabled>Download Text File</button>Click to download decoded file.
+    <button id="dwnld" onclick="downloadTextFile()" disabled="True">Download Text File</button>Click to download decoded file.
     <br>
     <p>
+
+    <details style="text-align: left; padding: 10px;"><summary>File Structure (Click to expand)</summary>
     The contents of the entries in the logs are as follows: <br>
     Each entry in BMS log and MBB log has a 13 byte header:
-<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=400
-<tr><td>Bytes</td><td>Content</td><td align=right>Example</td></tr>
-<tr><td>1</td><td>0xB2</td><td align=right>178</td></tr>
-<tr><td>1</td><td>Length of entry</td><td align=right>125</td></tr>
-<tr><td>1</td><td>Type of entry</td><td align=right>251</td></tr>
-<tr><td>4</td><td>unix timestamp</td><td align=right>1770258390</td></tr>
-<tr><td>4</td><td>milliseconds</td><td align=right>354000</td></tr>
-<tr><td>1</td><td>Log entry counter</td><td align=right>74</td></tr>
-<tr><td>1</td><td>Always '1'</td><td align=right>1</td></tr>
-</table>
+    <table class="MsoNormalTable" border="0" cellspacing="0" cellpadding="0" width="400">
+    <tbody>
+    <tr><td>Bytes</td><td>Content</td><td align="right">Example</td></tr>
+    <tr><td>1</td><td>0xB2</td><td align="right">178</td></tr>
+    <tr><td>1</td><td>Length of entry</td><td align="right">125</td></tr>
+    <tr><td>1</td><td>Type of entry</td><td align="right">251</td></tr>
+    <tr><td>4</td><td>unix timestamp</td><td align="right">1770258390</td></tr>
+    <tr><td>4</td><td>milliseconds</td><td align="right">354000</td></tr>
+    <tr><td>1</td><td>Log entry counter</td><td align="right">74</td></tr>
+    <tr><td>1</td><td>Always '1'</td><td align="right">1</td></tr>
+    </tbody>
+    </table>
     <br>
-For both BMS log and MMB log the first entry is of type 251 which is mostly text <br>
-(Batt serial, Board part num,  Board serial, Firmware part num, Firmware build number, Firmware build hash,  Firmware revision, VIN, model type)		
+    For both BMS log and MMB log the first entry is of type 251 which is mostly text <br>
+    (Batt serial, Board part num,  Board serial, Firmware part num, Firmware build number, Firmware build hash,  Firmware revision, VIN, model type)		
     <br>
-BMS log and MMB log have text entries is of type 253		
+    BMS log and MMB log have text entries is of type 253		
     <br>
-BMS log has binary entry types 75, 76 and 77 which are of length 52, 70 and 78 respectively.		
+    BMS log has binary entry types 75, 76 and 77 which are of length 52, 70 and 78 respectively.		
     <br>
-Sometimes there are one or two extra bytes of value 0xFE which can be ignored (the entry length is higher then)		
+    Sometimes there are one or two extra bytes of value 0xFE which can be ignored (the entry length is higher then)		
     <br>
-Byte sequences of 0x00F0FF00 are errors. Some values can be restored <br>
-(length of entry is number of bytes between 0xB2 bytes, time goes up steadily, log entry counter increments by 1, …)		
-    <br>
-    <br>
-Entry type 77 contains the same fields as 76 plus 8 additional bytes		
-    <br>
-Entry type 76 contains the same fields as 75 plus 18 additional bytes		
-    <br>
-Structure is as follows (after header)
-<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=400
-<tr><td>Bytes</td><td>Content</td><td align=right>Example</td></tr>
-<tr><td>4</td><td>Flags (only for type 77)</td><td align=right>0</td></tr>
-<tr><td>4</td><td>Flags (only for type 76 and77)</td><td align=right>0</td></tr>
-<tr><td>4</td><td>Flags</td><td align=right>0</td></tr>
-<tr><td>4</td><td>Flags</td><td align=right>0</td></tr>
-<tr><td>2</td><td>Cell voltage MIN mV</td><td align=right>3750</td></tr>
-<tr><td>2</td><td>Cell OCV low mV</td><td align=right>3912</td></tr>
-<tr><td>2</td><td>Cell voltage MAX mV</td><td align=right>3771</td></tr>
-<tr><td>1</td><td>SOC</td><td align=right>67</td></tr>
-<tr><td>4</td><td>Current (mA)</td><td align=right>91638</td></tr>
-<tr><td>1</td><td>BMS state code</td><td align=right>11</td></tr>
-<tr><td>1</td><td>Constant 0x33</td><td align=right>51</td></tr>
-<tr><td>1</td><td>1B   Flag (0x00=normal, 0x0C=transitional)</td><td align=right>0</td></tr>
-<tr><td>1</td><td>1B   Load flag (0x78=idle, 0xFF=active)</td><td align=right>255</td></tr>
-<tr><td>1</td><td>1B   Bus engaged (0x01=load, 0x00=idle)</td><td align=right>1</td></tr>
-<tr><td>4</td><td>4B   Reserved/padding (mostly 0)</td><td align=right>0</td></tr>
-<tr><td>4</td><td>4B   Reserved/padding (mostly 0)</td><td align=right>0</td></tr>
-<tr><td>1</td><td>1B   Report mode (1=std, 3=min, 7=active)</td><td align=right>7</td></tr>
-<tr><td>4</td><td>Voltage</td><td align=right>105387</td></tr>
-<tr><td>1</td><td>Flag</td><td align=right>1</td></tr>
-<tr><td>1</td><td>Flag</td><td align=right>10</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>13</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>14</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>93</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>208</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>3</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>152</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>0</td></tr>
-<tr><td>4</td><td>(rising while RUN) (only for type 76 and77)</td><td align=right>134901</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>0</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>21</td></tr>
-<tr><td>1</td><td>? (only for type 76 and77)</td><td align=right>0</td></tr>
-<tr><td>4</td><td>(rising while RUN and CHARGE) (only for type 77)</td><td align=right>134830</td></tr>
-</table>
-MBB log has entry types 72, 73, 81, 82,  83, 84		
+    Byte sequences of 0x00F0FF00 are errors. Some values can be restored <br>
+    (length of entry is number of bytes between 0xB2 bytes, time goes up steadily, log entry counter increments by 1, …)		
     <br>
     <br>
-Type 72 ocurs while charging every 640 seconds. <br>
-I get two entries: one for the standard charger and one for the rapid charger		
+    Entry type 77 contains the same fields as 76 plus 8 additional bytes		
     <br>
-<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=400
-<tr><td>Bytes</td><td>Content</td><td align=right>Example</td></tr>
-<tr><td>1</td><td></td><td align=right>32</td></tr>
-<tr><td>1</td><td></td><td align=right>54</td></tr>
-<tr><td>1</td><td></td><td align=right>107</td></tr>
-<tr><td>1</td><td></td><td align=right>87</td></tr>
-<tr><td>1</td><td></td><td align=right>32</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>128</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>4</td><td>OUT mV,</td><td align=right>105450</td></tr>
-<tr><td>1</td><td>OUT A,</td><td align=right>24</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>55</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>8</td></tr>
-<tr><td>1</td><td></td><td align=right>201</td></tr>
-<tr><td>1</td><td></td><td align=right>1</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td>CMD IN,</td><td align=right>12</td></tr>
-<tr><td>1</td><td></td><td align=right>10</td></tr>
-<tr><td>1</td><td>IN V,</td><td align=right>226</td></tr>
-<tr><td>1</td><td>IN A,</td><td align=right>11</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td>In Hz</td><td align=right>50</td></tr>
-<tr><td>1</td><td></td><td align=right>23</td></tr>
-<tr><td>1</td><td>CANid</td><td align=right>16</td></tr>
-<tr><td>1</td><td>Version</td><td align=right>200</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>4</td><td>Serial Nr</td><td align=right>2314135</td></tr>
-<tr><td>1</td><td></td><td align=right>10</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>4</td><td></td><td align=right>113950</td></tr>
-<tr><td>1</td><td>CMD OUT,</td><td align=right>37</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>12</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>1</td><td></td><td align=right>1</td></tr>
-</table>
-Type 73 ocurs while charging every 640 seconds between the type 72 entries.
+    Entry type 76 contains the same fields as 75 plus 18 additional bytes		
     <br>
-<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=400
-<tr><td>Bytes</td><td>Content</td><td align=right>Example</td></tr>
-<tr><td>4</td><td>Max_Charge_Voltage mV</td><td align=right>117600</td></tr>
-<tr><td>1</td><td>?</td><td align=right>71</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>Charge target?</td><td align=right>80</td></tr>
-<tr><td>1</td><td>?</td><td align=right>30</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>60</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>0</td></tr>
-<tr><td>1</td><td>?</td><td align=right>1</td></tr>
-<tr><td>1</td><td>?</td><td align=right>12</td></tr>
-<tr><td>4</td><td>Storage_Voltage mV</td><td align=right>106000</td></tr>
-</table>
-When the bike is turned off entries 81 and 84 appear approximately every hour.		
-When the bike is in state "RUN" there are entries for every minute in the following order: 81 and 84, 82, 81 and 84, 83, …		
-Type 83 (length 106 bytes) is type 82 plus 14 bytes. Type 83 is type 81 plus 17 bytes.		
+    Structure is as follows (after header)
+    <table class="MsoNormalTable" border="0" cellspacing="0" cellpadding="0" width="400"><tbody><tr><td>Bytes</td><td>Content</td><td align="right">Example</td></tr>
+    <tr><td>4</td><td>Flags (only for type 77)</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>Flags (only for type 76 and77)</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>Flags</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>Flags</td><td align="right">0</td></tr>
+    <tr><td>2</td><td>Cell voltage MIN mV</td><td align="right">3750</td></tr>
+    <tr><td>2</td><td>Cell OCV low mV</td><td align="right">3912</td></tr>
+    <tr><td>2</td><td>Cell voltage MAX mV</td><td align="right">3771</td></tr>
+    <tr><td>1</td><td>SOC</td><td align="right">67</td></tr>
+    <tr><td>4</td><td>Current (mA)</td><td align="right">91638</td></tr>
+    <tr><td>1</td><td>BMS state code</td><td align="right">11</td></tr>
+    <tr><td>1</td><td>Constant 0x33</td><td align="right">51</td></tr>
+    <tr><td>1</td><td>1B   Flag (0x00=normal, 0x0C=transitional)</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>1B   Load flag (0x78=idle, 0xFF=active)</td><td align="right">255</td></tr>
+    <tr><td>1</td><td>1B   Bus engaged (0x01=load, 0x00=idle)</td><td align="right">1</td></tr>
+    <tr><td>4</td><td>4B   Reserved/padding (mostly 0)</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>4B   Reserved/padding (mostly 0)</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>1B   Report mode (1=std, 3=min, 7=active)</td><td align="right">7</td></tr>
+    <tr><td>4</td><td>Voltage</td><td align="right">105387</td></tr>
+    <tr><td>1</td><td>Flag</td><td align="right">1</td></tr>
+    <tr><td>1</td><td>Flag</td><td align="right">10</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">13</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">14</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">93</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">208</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">3</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">152</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>(rising while RUN) (only for type 76 and77)</td><td align="right">134901</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">21</td></tr>
+    <tr><td>1</td><td>? (only for type 76 and77)</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>(rising while RUN and CHARGE) (only for type 77)</td><td align="right">134830</td></tr>
+    </tbody></table>
+    MBB log has entry types 72, 73, 81, 82,  83, 84		
     <br>
-<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=400
-<tr><td>Bytes</td><td>Content</td><td align=right>Example</td></tr>
-<tr><td>4</td><td>Flags</td><td align=right>0</td></tr>
-<tr><td>4</td><td>Flags</td><td align=right>0</td></tr>
-<tr><td>4</td><td>Flags</td><td align=right>0</td></tr>
-<tr><td>4</td><td>Flags</td><td align=right>0</td></tr>
-<tr><td>4</td><td>DC_Bus_Voltage mV</td><td align=right>101000</td></tr>
-<tr><td>4</td><td>DC_Bus_Current mA</td><td align=right>20200</td></tr>
-<tr><td>4</td><td>n rpm</td><td align=right>2112</td></tr>
-<tr><td>1</td><td>SOC %</td><td align=right>45</td></tr>
-<tr><td>4</td><td>U (pack_voltage_mv)</td><td align=right>100845</td></tr>
-<tr><td>4</td><td>I mA</td><td align=right>15618</td></tr>
-<tr><td>5</td><td>State</td><td align=right>RUN</td></tr>
-<tr><td>4</td><td></td><td align=right>0</td></tr>
-<tr><td>4</td><td>T_ambient °C * 100</td><td align=right>760</td></tr>
-<tr><td>4</td><td>Motor_Temp</td><td align=right>44</td></tr>
-<tr><td>4</td><td>Inverter_Temp</td><td align=right>18</td></tr>
-<tr><td>4</td><td>H temp (cell)</td><td align=right>14</td></tr>
-<tr><td>4</td><td>L temp (cell)</td><td align=right>12</td></tr>
-<tr><td>4</td><td>12V_Battery microV</td><td align=right>13117160</td></tr>
-<tr><td>2</td><td></td><td align=right>257</td></tr>
-<tr><td>4</td><td>ODO km * 10</td><td align=right>304552</td></tr>
-<tr><td>4</td><td>Speed (mm/h = km/h * 1 000 000)</td><td align=right>53268750</td></tr>
-<tr><td>2</td><td>Est. Range km * 100</td><td align=right>7889</td></tr>
-<tr><td>1</td><td></td><td align=right>0</td></tr>
-<tr><td>4</td><td></td><td align=right>0</td></tr>
-<tr><td>4</td><td></td><td align=right>0</td></tr>
-<tr><td>2</td><td></td><td align=right>0</td></tr>
-</table>
-Type 84:
     <br>
-<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=400
-<tr><td>4</td><td>torque microNm</td><td align=right>22200000</td></tr>
-<tr><td>4</td><td>current A</td><td align=right>111</td></tr>
-<tr><td>4</td><td>counter</td><td align=right>67</td></tr>
-<tr><td>4</td><td>discharge power W</td><td align=right>104422</td></tr>
-</table>
+    Type 72 ocurs while charging every 640 seconds. <br>
+    I get two entries: one for the standard charger and one for the rapid charger		
+    <br>
+    <table class="MsoNormalTable" border="0" cellspacing="0" cellpadding="0" width="400"><tbody><tr><td>Bytes</td><td>Content</td><td align="right">Example</td></tr>
+    <tr><td>1</td><td></td><td align="right">32</td></tr>
+    <tr><td>1</td><td></td><td align="right">54</td></tr>
+    <tr><td>1</td><td></td><td align="right">107</td></tr>
+    <tr><td>1</td><td></td><td align="right">87</td></tr>
+    <tr><td>1</td><td></td><td align="right">32</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">128</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>4</td><td>OUT mV,</td><td align="right">105450</td></tr>
+    <tr><td>1</td><td>OUT A,</td><td align="right">24</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">55</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">8</td></tr>
+    <tr><td>1</td><td></td><td align="right">201</td></tr>
+    <tr><td>1</td><td></td><td align="right">1</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td>CMD IN,</td><td align="right">12</td></tr>
+    <tr><td>1</td><td></td><td align="right">10</td></tr>
+    <tr><td>1</td><td>IN V,</td><td align="right">226</td></tr>
+    <tr><td>1</td><td>IN A,</td><td align="right">11</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td>In Hz</td><td align="right">50</td></tr>
+    <tr><td>1</td><td></td><td align="right">23</td></tr>
+    <tr><td>1</td><td>CANid</td><td align="right">16</td></tr>
+    <tr><td>1</td><td>Version</td><td align="right">200</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>4</td><td>Serial Nr</td><td align="right">2314135</td></tr>
+    <tr><td>1</td><td></td><td align="right">10</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>4</td><td></td><td align="right">113950</td></tr>
+    <tr><td>1</td><td>CMD OUT,</td><td align="right">37</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">12</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>1</td><td></td><td align="right">1</td></tr>
+    </tbody></table>
+    Type 73 ocurs while charging every 640 seconds between the type 72 entries.
+    <br>
+    <table class="MsoNormalTable" border="0" cellspacing="0" cellpadding="0" width="400"><tbody>
+    <tr><td>Bytes</td><td>Content</td><td align="right">Example</td></tr>
+    <tr><td>4</td><td>Max_Charge_Voltage mV</td><td align="right">117600</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">71</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>Charge target?</td><td align="right">80</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">30</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">60</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">0</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">1</td></tr>
+    <tr><td>1</td><td>?</td><td align="right">12</td></tr>
+    <tr><td>4</td><td>Storage_Voltage mV</td><td align="right">106000</td></tr>
+    </tbody></table>
+    When the bike is turned off entries 81 and 84 appear approximately every hour.		
+    When the bike is in state "RUN" there are entries for every minute in the following order: 81 and 84, 82, 81 and 84, 83, …		
+    Type 83 (length 106 bytes) is type 82 plus 14 bytes. Type 83 is type 81 plus 17 bytes.		
+    <br>
+    <table class="MsoNormalTable" border="0" cellspacing="0" cellpadding="0" width="400"><tbody>
+    <tr><td>Bytes</td><td>Content</td><td align="right">Example</td></tr>
+    <tr><td>4</td><td>Flags</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>Flags</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>Flags</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>Flags</td><td align="right">0</td></tr>
+    <tr><td>4</td><td>DC_Bus_Voltage mV</td><td align="right">101000</td></tr>
+    <tr><td>4</td><td>DC_Bus_Current mA</td><td align="right">20200</td></tr>
+    <tr><td>4</td><td>n rpm</td><td align="right">2112</td></tr>
+    <tr><td>1</td><td>SOC %</td><td align="right">45</td></tr>
+    <tr><td>4</td><td>U (pack_voltage_mv)</td><td align="right">100845</td></tr>
+    <tr><td>4</td><td>I mA</td><td align="right">15618</td></tr>
+    <tr><td>5</td><td>State</td><td align="right">RUN</td></tr>
+    <tr><td>4</td><td></td><td align="right">0</td></tr>
+    <tr><td>4</td><td>T_ambient °C * 100</td><td align="right">760</td></tr>
+    <tr><td>4</td><td>Motor_Temp</td><td align="right">44</td></tr>
+    <tr><td>4</td><td>Inverter_Temp</td><td align="right">18</td></tr>
+    <tr><td>4</td><td>H temp (cell)</td><td align="right">14</td></tr>
+    <tr><td>4</td><td>L temp (cell)</td><td align="right">12</td></tr>
+    <tr><td>4</td><td>12V_Battery microV</td><td align="right">13117160</td></tr>
+    <tr><td>2</td><td></td><td align="right">257</td></tr>
+    <tr><td>4</td><td>ODO km * 10</td><td align="right">304552</td></tr>
+    <tr><td>4</td><td>Speed (mm/h = km/h * 1 000 000)</td><td align="right">53268750</td></tr>
+    <tr><td>2</td><td>Est. Range km * 100</td><td align="right">7889</td></tr>
+    <tr><td>1</td><td></td><td align="right">0</td></tr>
+    <tr><td>4</td><td></td><td align="right">0</td></tr>
+    <tr><td>4</td><td></td><td align="right">0</td></tr>
+    <tr><td>2</td><td></td><td align="right">0</td></tr>
+    </tbody></table>
+    Type 84:
+    <br>
+    <table class="MsoNormalTable" border="0" cellspacing="0" cellpadding="0" width="400"><tbody>
+    <tr><td>4</td><td>torque microNm</td><td align="right">22200000</td></tr>
+    <tr><td>4</td><td>current A</td><td align="right">111</td></tr>
+    <tr><td>4</td><td>counter</td><td align="right">67</td></tr>
+    <tr><td>4</td><td>discharge power W</td><td align="right">104422</td></tr>
+    </tbody></table>
+    </p>
+    </details>
+
+    <br>
+    Filter for entry types:
+    <input type="checkbox" id="v251" value="251" onclick="myFilter()" checked="True" style="display:none"><label id="l251" style="display:none" for="v251">251</label>
+    <input type="checkbox" id="v253" value="253" onclick="myFilter()" checked="True" style="display:none"><label id="l253" style="display:none" for="v253">253</label>
+    <input type="checkbox" id="v72" value="72" onclick="myFilter()" checked="True" style="display:none"><label id="l72" style="display:none" for="v72">72</label>
+    <input type="checkbox" id="v73" value="73" onclick="myFilter()" checked="True" style="display:none"><label id="l73" style="display:none" for="v73">73</label>
+    <input type="checkbox" id="v74" value="74" onclick="myFilter()" checked="True" style="display:none"><label id="l74" style="display:none" for="v74">74</label>
+    <input type="checkbox" id="v75" value="75" onclick="myFilter()" checked="True" style="display:none"><label id="l75" style="display:none" for="v75">75</label>
+    <input type="checkbox" id="v76" value="76" onclick="myFilter()" checked="True" style="display:none"><label id="l76" style="display:none" for="v76">76</label>
+    <input type="checkbox" id="v77" value="77" onclick="myFilter()" checked="True" style="display:none"><label id="l77" style="display:none" for="v77">77</label>
+    <input type="checkbox" id="v79" value="79" onclick="myFilter()" checked="True" style="display:none"><label id="l79" style="display:none" for="v79">79</label>
+    <input type="checkbox" id="v81" value="81" onclick="myFilter()" checked="True" style="display:none"><label id="l81" style="display:none" for="v81">81</label>
+    <input type="checkbox" id="v82" value="82" onclick="myFilter()" checked="True" style="display:none"><label id="l82" style="display:none" for="v82">82</label>
+    <input type="checkbox" id="v83" value="83" onclick="myFilter()" checked="True" style="display:none"><label id="l83" style="display:none" for="v83">83</label>
+    <input type="checkbox" id="v84" value="84" onclick="myFilter()" checked="True" style="display:none"><label id="l84" style="display:none" for="v84">84</label>
+    <br>
+    <br>
+    <table id="mytab" class="MsoNormalTable" border="1" cellspacing="0" cellpadding="2" <tr=""><tbody>
+    <tr><th width=80>length&nbsp;<button id="sort0" onclick="sort0()" title="sort">&#9651;</button></th>
+    <th width=60>type&nbsp;<button id="sort1" onclick="sort1()" title="sort">&#9651;</button></th>
+    <th width=150>time&nbsp;<button id="sort2" onclick="sort2()" title="sort">&#9651;</button></th>
+    <th>ms</th>
+    <th>lc</th>
+    <th>pos</th>
+    <th >text</th><th>data</th></tr>
+    </tbody></table>
+
     </p>
     </div>
 
-
     <script>
-        var data = "l;t;time;ms;lc;1;text;data" + "\n";
+        var datao = "l;t;time;ms;lc;1;text;data" + "\n";
+        var data = [];
+        var nrows = 0;
+        var dataf = [];
+        var cells=[]; // byte array for parsed entry
         var fn ="";
         document
             .getElementById('fileInput')
             .addEventListener('change', function (event) {
+                datao = "l;t;time;ms;lc;1;text;data" + "\n";
+                data = [];
+                nrows = 0;
+                dataf = [];
+                cells=[]; // byte array for parsed entry
                 let file = event.target.files[0];
                 let reader = new FileReader();
 
@@ -281,7 +346,6 @@ Type 84:
                     let ne=0; // position of error 0x00F0FF
                     let tx=""; // text part of entry
                     let vs=[0]; // byte array for current entry
-                    let cells=[0]; // byte array for parsed entry
                     let cells7x=Array(40).fill(0); // backup for correction of errors
                     let r=0; // counter for entries in logfile
                     let b=0; // next byte to read
@@ -306,7 +370,9 @@ Type 84:
                             if (vs[0] == 178) { // correct entry
                                 r = r + 1;
                                 let da = new Date(ts*1000);
-                                cells = [le,t,da.toLocaleString().replace(",",""),ms,lc,nf,tx]; // header of entry data
+                                cells.push([le,t,da.toLocaleString().replace(",",""),ms,lc,nf,tx]); // header of entry data
+                                if (t >0 && document.getElementById("v" + t)) {document.getElementById("v" + t).style.display="inline";}
+                                if (t >0 && document.getElementById("l" + t)) {document.getElementById("l" + t).style.display="inline";}
                             }
                             if (t>= 75 && t <= 77) { // corrections for BMS log
                                 if (vs[30 + ( t -75)*4] == 255) vs[31 + ( t -75)*4] = 255; // negative current -> byte 4 must be 255
@@ -318,24 +384,24 @@ Type 84:
                                 ib = 13; // first byte after header
                                 for (j = 7; j < vi.length; j++) { // for each filed of entry
                                     if (vi[j] == 5) { // field "state" has data type string
-                                        cells.push("");
+                                        cells[r-1].push("");
                                         // replace non printable characters
                                         for (k = 0; k < vi[j]; k++) {
                                             if (vs[ib + k] >= 32 && vs[ib + k] <= 127) {
-                                                cells[j] = cells[j] + String.fromCharCode(vs[ib + k]) 
+                                                cells[r-1][j] = cells[r-1][j] + String.fromCharCode(vs[ib + k]) 
                                             } else {
-                                                cells[j] = cells[j] + " ";
+                                                cells[r-1][j] = cells[r-1][j] + " ";
                                             }
                                         }
                                     } else {
-                                        cells.push(0);
+                                        cells[r-1].push(0);
                                         if (t>= 75 && t <= 77 && ne != 32 + (t - 75) * 4 && ne != 49 + (t - 75) * 4 && ne != 50 + (t - 75) * 4 && ne-1 >= ib - 3 && ne-1 <= ib + (vi[j] - 1)) {
-                                            cells[j] = cells7x[j]; // in case of error: get data from backup
+                                            cells[r-1][j] = cells7x[j]; // in case of error: get data from backup
                                         } else { // interpret given number of bytes as signed int
                                             if (vi[j] == 4 && vs[ib +3] >127) vs[ib +3] = vs[ib+3]-256;
-                                            cells[j] = 0;
+                                            cells[r-1][j] = 0;
                                             for (k = 0; k < vi[j]; k++) {
-                                                cells[j] = cells[j] + vs[ib+k] * 256 ** k;                                            }
+                                                cells[r-1][j] = cells[r-1][j] + vs[ib+k] * 256 ** k;                                            }
                                         }
                                     }
                                     ib = ib + vi[j];
@@ -343,13 +409,13 @@ Type 84:
                             }
                             if (t>= 75 && t <= 77) {
                                 // error corrections for cell voltages
-                                if (ne >= 22 - 3 + (t - 75) * 4 && ne <= 22 + 1 + (t - 75) * 4) cells[11] = cells[13] - (cells7x[13] - cells7x[11]); // u_cell_min = u_cell_max - previous cell balance
-                                if (ne >= 24 - 3 + (t - 75) * 4 && ne <= 24 + 1 + (t - 75) * 4) cells[12] = cells7x[12] ; // cell balance = previous cell balance
-                                if (ne >= 26 - 3 + (t - 75) * 4 && ne <= 26 + 1 + (t - 75) * 4) cells[13] = cells[11] + (cells7x[13] - cells7x[11]);  // u_cell_max = u_cell_min + previous cell balance
-                                if (ne >= 47 - 3 + (t - 75) * 4 && ne <= 47 + 1 + (t - 75) * 4) cells[24] = (cells7x[13] + cells7x[11]) * 14; // voltage = (umin + umax) / 2 * 28
-                                for (let j = 0; j < cells.length; j++) cells7x[j] = cells[j] // backup data
+                                if (ne >= 22 - 3 + (t - 75) * 4 && ne <= 22 + 1 + (t - 75) * 4) cells[r-1][11] = cells[r-1][13] - (cells7x[13] - cells7x[11]); // u_cell_min = u_cell_max - previous cell balance
+                                if (ne >= 24 - 3 + (t - 75) * 4 && ne <= 24 + 1 + (t - 75) * 4) cells[r-1][12] = cells7x[12] ; // cell balance = previous cell balance
+                                if (ne >= 26 - 3 + (t - 75) * 4 && ne <= 26 + 1 + (t - 75) * 4) cells[r-1][13] = cells[r-1][11] + (cells7x[13] - cells7x[11]);  // u_cell_max = u_cell_min + previous cell balance
+                                if (ne >= 47 - 3 + (t - 75) * 4 && ne <= 47 + 1 + (t - 75) * 4) cells[r-1][24] = (cells[r-1][13] + cells[r-1][11]) * 14; // voltage = (umin + umax) / 2 * 28
+                                for (let j = 0; j < cells[r-1].length; j++) cells7x[j] = cells[r-1][j] // backup data
                             }
-                            data += cells.join(";") + "\n"; // write entry to var data
+                            datao += cells[r-1].join(";") + "\n"; // write entry to var data
                             if (t == 251) document.getElementById('fileContents').innerHTML += ("<br/>" + tx); // print text for first entry (log type)
                             // initialize for next entry
                             vs = [0];
@@ -391,18 +457,82 @@ Type 84:
                         }
                     }
                     document.getElementById('dwnld').removeAttribute('disabled');
+                    nrows = cells.length;
+                    dataf = cells;
+                    for (let r = 0; r < nrows; r++) {
+                        let row = document.getElementById('mytab').insertRow(-1);
+                        let txt = "<tr><td>" + dataf[r].join("</td><td>") + "</td></tr>";
+                        if (dataf[r][1] > 250) {
+                            let p = txt.lastIndexOf("<td>");
+                            txt = txt.substring(0, p+3) + " colspan='20'" + txt.substring(p+3);
+                        }
+                        row.outerHTML = txt;
+                    }
+
                 };
                 reader.readAsArrayBuffer(file);
             });
 
+        function myFilter() {
+            let mfilter = []
+            let chb = document.getElementsByTagName("input")
+            for (i=0; i<chb.length;i++) {
+                if (chb[i].checked && chb[i].type == "checkbox") {mfilter.push(Number(chb[i].value));}
+            }
+            for (let r = 0; r < nrows; r++) {
+                let row = document.getElementById('mytab').deleteRow(-1);
+            }
+            dataf = cells.filter(function(a){return mfilter.findIndex(function(b){return b==a[1]})>=0});
+            nrows = dataf.length;
+            for (let r = 0; r < nrows; r++) {
+                let row = document.getElementById('mytab').insertRow(-1);
+                let txt = "<tr><td>" + dataf[r].join("</td><td>") + "</td></tr>";
+                if (dataf[r][1] > 250) {
+                    let p = txt.lastIndexOf("<td>");
+                    txt = txt.substring(0, p+3) + " colspan='20'" + txt.substring(p+3);
+                }
+                row.outerHTML = txt;
+            }
+        }
+        function sort0() {
+            document.getElementById('sort0').innerHTML  = '&#9650;';
+            document.getElementById('sort1').innerHTML  = '&#9651;';
+            document.getElementById('sort2').innerHTML  = '&#9651;';
+            dataf.sort(function(a, b){return a[0]-b[0]});
+            for (let r = 1; r < nrows+1; r++) {
+                let row = document.getElementById('mytab').rows[r];
+                row.outerHTML = "<tr><td>" + dataf[r-1].join("</td><td>") + "</td></tr>";
+            }
+        }
+        function sort1() {
+            document.getElementById('sort0').innerHTML  = '&#9651;';
+            document.getElementById('sort1').innerHTML  = '&#9650;';
+            document.getElementById('sort2').innerHTML  = '&#9651;';
+            dataf.sort(function(a, b){return a[1]-b[1]});
+            for (let r = 1; r < nrows+1; r++) {
+                let row = document.getElementById('mytab').rows[r];
+                row.outerHTML = "<tr><td>" + dataf[r-1].join("</td><td>") + "</td></tr>";
+            }
+        }
+        function sort2() {
+            document.getElementById('sort0').innerHTML  = '&#9651;';
+            document.getElementById('sort1').innerHTML  = '&#9651;';
+            document.getElementById('sort2').innerHTML  = '&#9650;';
+            dataf.sort(function(a, b){return (Date.parse(a[2])+a[3]/1000)-(Date.parse(b[2])+b[3]/1000)});
+            for (let r = 1; r < nrows+1; r++) {
+                let row = document.getElementById('mytab').rows[r];
+                row.outerHTML = "<tr><td>" + dataf[r-1].join("</td><td>") + "</td></tr>";
+            }
+        }
         function downloadTextFile() {
-            var blob = new Blob([data], { type: 'text/plain' });
+            var blob = new Blob([datao], { type: 'text/plain' });
             var link = document.createElement('a');
             data ="l;t;time;ms;lc;1;text;data" + "\n";
             link.href = URL.createObjectURL(blob);
             link.download = fn += '.txt';
             link.click();
         }
+
     </script>
-</body>
-</html>
+
+</body></html>
